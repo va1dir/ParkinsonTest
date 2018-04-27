@@ -5,6 +5,11 @@ TagManager:
   serializedVersion: 2
   tags:
   - Cube
+  - Trail
+  - Ground
+  - Wall
+  - resultGiros
+  - RMSValue
   layers:
   - Default
   - TransparentFX

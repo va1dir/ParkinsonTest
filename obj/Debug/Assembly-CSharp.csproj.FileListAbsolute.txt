@@ -67,3 +67,4 @@ C:\Users\valdi\Documents\ParkinsonTest\ParkinsonTest\Temp\bin\Debug\UnityEditor.
 C:\Users\valdi\Documents\ParkinsonTest\ParkinsonTest\Temp\bin\Debug\UnityEditor.iOS.Extensions.Xcode.xml
 C:\Users\valdi\Documents\ParkinsonTest\ParkinsonTest\obj\Debug\Assembly-CSharp.dll
 C:\Users\valdi\Documents\ParkinsonTest\ParkinsonTest\obj\Debug\Assembly-CSharp.pdb
+C:\Users\valdi\Documents\ParkinsonTest\ParkinsonTest\obj\Debug\Assembly-CSharp.csproj.CopyComplete

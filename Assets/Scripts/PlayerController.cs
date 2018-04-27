@@ -2,14 +2,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour {
-    
+
+    public Slider speedSlider;
+
     public float speed = 1000;
     public Text countText;
-    public Text winText;
-    public Text infoText;
+    public Text girosInfo;
+
+    public AudioClip soundPoint;
+    public AudioClip soundWall;
 
     private Rigidbody player;
     private int count;
@@ -17,22 +22,46 @@ public class PlayerController : MonoBehaviour {
     List<float> accelDataX = new List<float>();
     List<float> accelDataY = new List<float>();
     List<float> accelDataZ = new List<float>();
-    
+
+    List<float> accelData2 = new List<float>();
+
+    List<float> accelData3 = new List<float>();
+
     DateTime start;
 
     long RMSValue;
 
     float teste = 0;
 
+    float offsetX, offsetY, offsetZ;
+
+    float result = 0;
+    float result2 = 0;
+    float result3 = 0;
+
+    private float secondsCount;
+    private int minuteCount;
+    private int hourCount;
+
+    Gyroscope m_Gyro;
+
     void Start()
     {
+        speedSlider.value = 1000;
+
+        //Set up and enable the gyroscope (check your device has one)
+        m_Gyro = Input.gyro;
+        m_Gyro.enabled = true;
+
         player = GetComponent<Rigidbody>();
         count = 0;
         SetCountText();
-        winText.text = "";
-        infoText.text = "";
 
         start = DateTime.Now;
+
+        offsetX = Input.acceleration.x;
+        offsetY = Input.acceleration.y;
+        offsetZ = Input.acceleration.z;
 
         //accelDataX.Add(-1.207089900970459f);
         //accelDataX.Add(7.04614782333374f);
@@ -89,20 +118,36 @@ public class PlayerController : MonoBehaviour {
 
     void FixedUpdate()
     {
+        UpdateTimer();
         MovePlayer();
         UpdateInfo();
+        debugInfo();
     }
 
     void OnTriggerEnter(Collider other)
     {
+        if (other.CompareTag("Wall"))
+        {
+            Handheld.Vibrate();
+        }
+        if ( other.CompareTag("Cube"))
+            GetComponent<AudioSource>().PlayOneShot(soundPoint);
+
         if (other.gameObject.CompareTag("Cube"))
         {
             other.gameObject.SetActive(false);
             count = count + 1;
             SetCountText();
         }
+        if (other.gameObject.CompareTag("Trail"))
+        {
+            other.GetComponent<Renderer>().material.color = Color.green;
+        }
+        else if (other.gameObject.CompareTag("Ground"))
+        {
+            other.GetComponent<Renderer>().material.color = Color.red;
+        }
     }
-
     void MovePlayer()
     {
         if (SystemInfo.deviceType == DeviceType.Desktop)
@@ -116,53 +161,59 @@ public class PlayerController : MonoBehaviour {
         }
         else
         {
-            Vector3 movement = new Vector3(Input.acceleration.x, 0.0f, Input.acceleration.y);
+            Vector3 movement = new Vector3(Input.acceleration.x, 0.0f, Input.acceleration.y - offsetY);
             
             player.AddForce(movement * speed * Time.deltaTime);
         }
     }
-
     void UpdateInfo()
     {
-        //if (DateTime.Now.Second < start.Second + 20 && DateTime.Now.Millisecond % 5 == 0)
-        //{ 
-            accelDataX.Add(Input.acceleration.x * 100);
-            accelDataY.Add(Input.acceleration.y * 100);
-            accelDataZ.Add(Input.acceleration.z * 100);
+        speed = speedSlider.value;
 
-            teste = Input.acceleration.x + Input.acceleration.y + Input.acceleration.z;
+        accelDataX.Add(m_Gyro.rotationRate.x);
+        accelDataY.Add(m_Gyro.rotationRate.y);
+        accelDataZ.Add(m_Gyro.rotationRate.z);
 
-            Debug.Log(accelDataX[accelDataX.Count-1].ToString(), GameObject.Find("Player"));
-        //}
+        accelData2.Add(m_Gyro.rotationRate.sqrMagnitude);
+        
+        accelData3.Add(m_Gyro.userAcceleration.sqrMagnitude);
 
-        infoText.text = "teste " + teste;
+        if (Math.Abs(m_Gyro.rotationRate.x) + Math.Abs(m_Gyro.rotationRate.y) + Math.Abs(m_Gyro.rotationRate.z) > result)
+            result = Math.Abs(m_Gyro.rotationRate.x) + Math.Abs(m_Gyro.rotationRate.y) + Math.Abs(m_Gyro.rotationRate.z);
+
+        if (Math.Abs(m_Gyro.rotationRate.sqrMagnitude) > result2)
+            result2 = Math.Abs(m_Gyro.rotationRate.sqrMagnitude);
+
+        if (Math.Abs(m_Gyro.userAcceleration.sqrMagnitude) > result3)
+            result3 = Math.Abs(m_Gyro.userAcceleration.sqrMagnitude);
+    }
+    private void debugInfo()
+    {
+        girosInfo.text = "rotation rate " + m_Gyro.rotationRate;
     }
 
-    void RMSCount()
+    private double RMSCount(List<float> accelDataX, List<float> accelDataY, List<float> accelDataZ)
     {
         double accTotal = 0;
 
-        /*foreach (double accValue in accelDataX)
-        {
-            accTotal += accValue;
-        }
-        foreach (double accValue in accelDataY)
-        {
-            accTotal += accValue;
-        }
-        foreach (double accValue in accelDataY)
-        {
-            accTotal += accValue;
-        }*/
-
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < accelDataX.Count; i++)
         {
             accTotal += accelDataX[i] + accelDataY[i] + accelDataZ[i];
         }
 
-        Debug.Log(accTotal.ToString(), GameObject.Find("Player"));
+        return Math.Sqrt(Math.Abs(accTotal / accelDataX.Count));
+    }
 
-        RMSValue = (long) Math.Sqrt(Math.Abs(accTotal / accelDataX.Count));
+    private double RMSCount(List<float> accelData)
+    {
+        double accTotal = 0;
+
+        for (int i = 0; i < accelData.Count; i++)
+        {
+            accTotal += accelData[i];
+        }
+
+        return Math.Sqrt(Math.Abs(accTotal / accelData.Count));
     }
 
     void SetCountText()
@@ -170,10 +221,33 @@ public class PlayerController : MonoBehaviour {
         countText.text = "Count " + count.ToString();
         if (count >= 8)
         {
-            RMSCount();
-            winText.text =  RMSValue.ToString();
+            PlayerPrefs.SetFloat("giros", result);
+            PlayerPrefs.SetFloat("giros2", result2);
+            PlayerPrefs.SetFloat("userAcce", result3);
+            PlayerPrefs.SetFloat("rms", (float)RMSCount(accelDataX,accelDataY,accelDataZ));
+            PlayerPrefs.SetFloat("rms2", (float)RMSCount(accelData2));
+            PlayerPrefs.SetFloat("rms3", (float)RMSCount(accelData3));
+            PlayerPrefs.SetString("time", minuteCount + "m:" + (int)secondsCount + "s");
+
+
+            //StaticClass.CrossSceneInformation = finalResult;
+            SceneManager.LoadScene("Result");
 
             //Debug.Log(RMSValue.ToString(), GameObject.Find("Player"));
+        }
+    }
+    public void UpdateTimer()
+    {
+        secondsCount += Time.deltaTime;
+        if (secondsCount >= 60)
+        {
+            minuteCount++;
+            secondsCount = 0;
+        }
+        else if (minuteCount >= 60)
+        {
+            hourCount++;
+            minuteCount = 0;
         }
     }
 }
