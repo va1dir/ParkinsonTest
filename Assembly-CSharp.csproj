@@ -59,6 +59,7 @@
      <Compile Include="Assets\Scripts\Result2Controller.cs" />
      <Compile Include="Assets\Scripts\Result3Controller.cs" />
      <Compile Include="Assets\Scripts\ResultController.cs" />
+     <Compile Include="Assets\Scripts\Rotator.cs" />
      <Compile Include="Assets\Scripts\Sound.cs" />
      <None Include="Assets\Materials\UI-Default-No-Alpha.shader" />
  <Reference Include="UnityEngine.UI">
